@@ -1,1 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Remover Silêncio (com FFmpeg)</title>
+  <style>
+    body { font-family: Arial; padding: 30px; max-width: 700px; margin: auto; }
+    input, label { margin-bottom: 10px; display: block; }
+    button { padding: 10px 20px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h2>Remover Silêncio de Áudio (.mp3)</h2>
+  <form id="formAudio">
+    <label>Selecionar áudio (.mp3):</label>
+    <input type="file" name="audio" accept=".mp3" required>
 
+    <label>Stop Periods:</label>
+    <input type="number" name="stopPeriods" value="-1" required>
+
+    <label>Stop Duration (s):</label>
+    <input type="number" step="0.01" name="stopDuration" value="0.50" required>
+
+    <label>Stop Threshold (dB):</label>
+    <input type="number" step="0.01" name="stopThreshold" value="-40.00" required>
+
+    <button type="submit">Remover Silêncio</button>
+  </form>
+
+  <script>
+    const form = document.getElementById('formAudio');
+
+    form.addEventListener('submit', async function (event) {
+      event.preventDefault();
+
+      const formData = new FormData(form);
+      let fileHandle;
+
+      try {
+        // Solicita o local para salvar antes de qualquer await que "quebre" o gesto
+        if ('showSaveFilePicker' in window) {
+          fileHandle = await showSaveFilePicker({
+            suggestedName: 'audio_sem_silencio.mp3',
+            types: [{
+              description: 'Áudio MP3',
+              accept: { 'audio/mpeg': ['.mp3'] }
+            }]
+          });
+        }
+
+        const response = await fetch('/remover_silencio', {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!response.ok) {
+          throw new Error('Erro ao processar o áudio');
+        }
+
+        const blob = await response.blob();
+
+        if (fileHandle) {
+          const writableStream = await fileHandle.createWritable();
+          await writableStream.write(blob);
+          await writableStream.close();
+        } else {
+          // fallback: download automático
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = 'audio_sem_silencio.mp3';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }
+
+      } catch (error) {
+        alert('Erro: ' + error.message);
+      }
+    });
+  </script>
+</body>
+</html>
