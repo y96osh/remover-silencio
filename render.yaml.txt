@@ -1,0 +1,6 @@
+services:
+  - type: web
+    name: remover-silencio
+    runtime: python
+    buildCommand: ""
+    startCommand: "python app.py"
