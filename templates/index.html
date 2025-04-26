@@ -2,15 +2,120 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Remover Silêncio (com FFmpeg)</title>
   <style>
-    body { font-family: Arial; padding: 30px; max-width: 700px; margin: auto; }
-    input, label { margin-bottom: 10px; display: block; }
-    button { padding: 10px 20px; margin-top: 10px; }
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%);
+      margin: 0;
+      min-height: 100vh;
+      padding-top: 70px;
+    }
+
+    header {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      background-color: #007bff;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      z-index: 1000;
+      overflow-x: auto;
+    }
+
+    nav {
+      white-space: nowrap;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 25px;
+      padding: 15px 20px;
+      min-width: max-content;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      font-size: 1em;
+      font-weight: 500;
+      transition: opacity 0.3s, transform 0.2s;
+    }
+
+    nav a:hover {
+      opacity: 0.85;
+      transform: translateY(-2px);
+    }
+
+    .container {
+      background-color: #fff;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+      animation: fadeIn 0.8s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h2, label {
+      color: #333;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    input[type="file"], input[type="number"] {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1em;
+    }
+
+    button {
+      padding: 12px 20px;
+      font-size: 1em;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background-color 0.3s, transform 0.2s;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+      transform: translateY(-2px);
+    }
   </style>
 </head>
 <body>
+
+<header>
+  <nav>
+    <a href="index.html">Início</a>
+    <a href="modelar.html">Modelar Roteiro</a>
+    <a href="roteiro.html">Criar Roteiro</a>
+    <a href="gerador.html">Gerador de Prompts</a>
+    <a href="estilo.html">Estilos de Imagens</a>
+    <a href="infos.html">Informações</a>
+    <a href="legendasrt.html">Legenda SRT</a>
+    <a href="https://remover-silencio.onrender.com/" target="_blank">Remover Silêncio</a>
+  </nav>
+</header>
+
+<div class="container">
   <h2>Remover Silêncio de Áudio (.mp3)</h2>
+
   <form id="formAudio">
     <label>Selecionar áudio (.mp3):</label>
     <input type="file" name="audio" accept=".mp3" required>
@@ -26,59 +131,59 @@
 
     <button type="submit">Remover Silêncio</button>
   </form>
+</div>
 
-  <script>
-    const form = document.getElementById('formAudio');
+<script>
+  const form = document.getElementById('formAudio');
 
-    form.addEventListener('submit', async function (event) {
-      event.preventDefault();
+  form.addEventListener('submit', async function (event) {
+    event.preventDefault();
 
-      const formData = new FormData(form);
-      let fileHandle;
+    const formData = new FormData(form);
+    let fileHandle;
 
-      try {
-        // Solicita o local para salvar antes de qualquer await que "quebre" o gesto
-        if ('showSaveFilePicker' in window) {
-          fileHandle = await showSaveFilePicker({
-            suggestedName: 'audio_sem_silencio.mp3',
-            types: [{
-              description: 'Áudio MP3',
-              accept: { 'audio/mpeg': ['.mp3'] }
-            }]
-          });
-        }
-
-        const response = await fetch('/remover_silencio', {
-          method: 'POST',
-          body: formData
+    try {
+      if ('showSaveFilePicker' in window) {
+        fileHandle = await showSaveFilePicker({
+          suggestedName: 'audio_sem_silencio.mp3',
+          types: [{
+            description: 'Áudio MP3',
+            accept: { 'audio/mpeg': ['.mp3'] }
+          }]
         });
-
-        if (!response.ok) {
-          throw new Error('Erro ao processar o áudio');
-        }
-
-        const blob = await response.blob();
-
-        if (fileHandle) {
-          const writableStream = await fileHandle.createWritable();
-          await writableStream.write(blob);
-          await writableStream.close();
-        } else {
-          // fallback: download automático
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = 'audio_sem_silencio.mp3';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-        }
-
-      } catch (error) {
-        alert('Erro: ' + error.message);
       }
-    });
-  </script>
+
+      const response = await fetch('/remover_silencio', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao processar o áudio');
+      }
+
+      const blob = await response.blob();
+
+      if (fileHandle) {
+        const writableStream = await fileHandle.createWritable();
+        await writableStream.write(blob);
+        await writableStream.close();
+      } else {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'audio_sem_silencio.mp3';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }
+
+    } catch (error) {
+      alert('Erro: ' + error.message);
+    }
+  });
+</script>
+
 </body>
 </html>
